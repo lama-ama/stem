@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل الزوار وقياس الرضا – معرض STEM</title>
+    <!-- Google Fonts: Cairo & Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        stem: {
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#06b6d4',
+                            purple: '#8b5cf6',
+                            pink: '#ec4899',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            glow: 'rgba(6, 182, 212, 0.15)'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-12px)' },
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 15px rgba(6, 182, 212, 0.3)' },
+                            '100%': { boxShadow: '0 0 35px rgba(139, 92, 246, 0.6)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.15);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .glass-panel, .glass-card {
+                background: white !important;
+                color: black !important;
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+            }
+        }
+
+        /* STEAM Animated Background */
+        .steam-bg {
+            background: radial-gradient(circle at 20% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 1) 0%, #090d16 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col steam-bg antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="no-print border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="app.navToHome()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 font-black text-xl">
+                S
+            </div>
+            <div>
+                <h1 id="headerExhibitionTitle" class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                    معرض STEM
+                </h1>
+                <p class="text-xs text-slate-400">نظام تسجيل الزوار وقياس الرضا الذكي</p>
+            </div>
+        </div>
+
+        <!-- Clock & Admin Quick Access -->
+        <div class="flex items-center gap-4">
+            <div id="liveClock" class="hidden md:flex items-center gap-2 text-xs font-mono text-cyan-400 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
+                <i class="fa-regular fa-clock"></i>
+                <span id="clockTime">00:00:00</span>
+            </div>
+
+            <!-- Admin Login / Control Toggle -->
+            <button id="adminNavBtn" onclick="app.toggleAdminAccess()" class="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-300 border bg-slate-800/80 border-slate-700 hover:border-cyan-500/50 hover:bg-slate-800 text-slate-300">
+                <i class="fa-solid fa-user-shield text-cyan-400"></i>
+                <span id="adminBtnText">لوحة التحكم</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Application Container -->
+    <main id="appContainer" class="flex-1 flex flex-col justify-center items-center p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full relative">
+
+        <!-- ==================== VIEW 1: KIOSK LANDING SCREEN ==================== -->
+        <section id="viewLanding" class="view-section w-full max-w-4xl flex flex-col items-center text-center space-y-8 my-auto py-8">
+            <!-- STEM Decorative Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-cyan-500/30 text-cyan-400 text-xs md:text-sm font-semibold animate-pulse-slow">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>العلوم • التكنولوجيا • الهندسة • الفنون • الرياضيات</span>
+            </div>
+
+            <!-- Welcome Title Header -->
+            <div class="space-y-4">
+                <h2 id="heroTitle" class="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
+                    أهلاً وسهلاً بكم في <br>
+                    <span class="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">معرض STEM</span>
+                </h2>
+                <p class="text-slate-300 text-base md:text-xl max-w-2xl mx-auto leading-relaxed">
+                    نسعد بزيارتكم، ونأمل أن تكون تجربتكم ممتعة وملهمة لحفز الابتكار والشغف بالعلوم.
+                </p>
+            </div>
+
+            <!-- Visual STEAM Icons Row -->
+            <div class="grid grid-cols-5 gap-3 md:gap-6 my-4 w-full max-w-lg">
+                <div class="p-3 md:p-4 rounded-2xl glass-panel text-center group hover:border-cyan-500/50 transition-all">
+                    <i class="fa-solid fa-flask text-2xl md:text-3xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2">علوم</p>
+                </div>
+                <div class="p-3 md:p-4 rounded-2xl glass-panel text-center group hover:border-purple-500/50 transition-all">
+                    <i class="fa-solid fa-microchip text-2xl md:text-3xl text-purple-400 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2">تقنية</p>
+                </div>
+                <div class="p-3 md:p-4 rounded-2xl glass-panel text-center group hover:border-blue-500/50 transition-all">
+                    <i class="fa-solid fa-gears text-2xl md:text-3xl text-blue-400 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2">هندسة</p>
+                </div>
+                <div class="p-3 md:p-4 rounded-2xl glass-panel text-center group hover:border-pink-500/50 transition-all">
+                    <i class="fa-solid fa-palette text-2xl md:text-3xl text-pink-400 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2">فنون</p>
+                </div>
+                <div class="p-3 md:p-4 rounded-2xl glass-panel text-center group hover:border-emerald-500/50 transition-all">
+                    <i class="fa-solid fa-square-root-variable text-2xl md:text-3xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2">رياضيات</p>
+                </div>
+            </div>
+
+            <!-- Big Action Button -->
+            <div class="pt-4">
+                <button onclick="app.startRegistration()" class="group relative inline-flex items-center justify-center p-0.5 overflow-hidden font-bold rounded-2xl shadow-2xl hover:scale-105 transition-all duration-300 active:scale-95 animate-glow">
+                    <span class="absolute inset-0 w-full h-full bg-gradient-to-br from-cyan-500 via-purple-600 to-pink-500"></span>
+                    <span class="relative px-10 md:px-14 py-5 md:py-6 bg-slate-950 rounded-[14px] transition-all duration-300 group-hover:bg-opacity-0 flex items-center gap-4 text-xl md:text-2xl text-white font-extrabold">
+                        <span>تسجيل زيارة</span>
+                        <i class="fa-solid fa-arrow-left text-cyan-400 group-hover:text-white group-hover:-translate-x-2 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Live Counter Banner -->
+            <div class="pt-6 border-t border-slate-800/80 w-full max-w-md flex justify-around text-slate-400 text-xs md:text-sm">
+                <div>
+                    <span class="block text-xl font-bold text-cyan-400" id="landingVisitorCount">0</span>
+                    <span>إجمالي زيارات اليوم</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div>
+                    <span class="block text-xl font-bold text-emerald-400" id="landingSatisfactionRate">100%</span>
+                    <span>معدل الرضا</span>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== VIEW 2: VISITOR REGISTRATION FORM ==================== -->
+        <section id="viewRegister" class="view-section hidden w-full max-w-2xl flex flex-col space-y-6 my-auto py-6">
+            <!-- Header Progress -->
+            <div class="flex items-center justify-between glass-panel p-4 rounded-2xl mb-2">
+                <button onclick="app.navToHome()" class="text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold">
+                    <i class="fa-solid fa-arrow-right"></i> إلغاء
+                </button>
+                <div class="flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800/50 px-3 py-1 rounded-full">
+                    <span>الخطوة 1 من 2</span>
+                </div>
+            </div>
+
+            <div class="text-center space-y-2">
+                <h3 class="text-2xl md:text-3xl font-bold text-white">اختر نوع الزائر</h3>
+                <p class="text-slate-400 text-sm">فضلاً حدد الفئة التي تمثلك لإكمال التسجيل في أقل من 10 ثوانٍ</p>
+            </div>
+
+            <!-- Visitor Type Cards Selection (Single Tap Action) -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 py-2">
+                <!-- Option 1: Student -->
+                <button onclick="app.selectVisitorType('طالب')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-cyan-400 hover:bg-cyan-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">طالب</span>
+                </button>
+
+                <!-- Option 2: Teacher -->
+                <button onclick="app.selectVisitorType('معلم')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-purple-400 hover:bg-purple-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">معلم</span>
+                </button>
+
+                <!-- Option 3: Parent -->
+                <button onclick="app.selectVisitorType('ولي أمر')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-emerald-400 hover:bg-emerald-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">ولي أمر</span>
+                </button>
+
+                <!-- Option 4: Inspector -->
+                <button onclick="app.selectVisitorType('مشرف تربوي')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-amber-400 hover:bg-amber-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">مشرف تربوي</span>
+                </button>
+
+                <!-- Option 5: Official -->
+                <button onclick="app.selectVisitorType('مسؤول أو شخصية رسمية')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-pink-400 hover:bg-pink-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-pink-500/10 text-pink-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-pink-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">مسؤول / شخصية رسمية</span>
+                </button>
+
+                <!-- Option 6: Other -->
+                <button onclick="app.selectVisitorType('زائر آخر')" class="visitor-type-card glass-panel p-5 rounded-2xl flex flex-col items-center justify-center space-y-3 text-center border-2 border-transparent hover:border-blue-400 hover:bg-blue-950/30 transition-all duration-200 group active:scale-95">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-street-view"></i>
+                    </div>
+                    <span class="font-bold text-base md:text-lg text-white">زائر آخر</span>
+                </button>
+            </div>
+
+            <!-- Confirmation & Quick Info Banner -->
+            <div class="glass-panel p-4 rounded-xl flex items-center justify-between text-xs text-slate-400">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-cyan-400"></i> لا يتم جمع أي بيانات شخصية (خصوصية 100%)</span>
+                <span class="font-mono text-cyan-400" id="nextSerialPreview">رقم الزيارة القادم: STEM-1001</span>
+            </div>
+        </section>
+
+
+        <!-- ==================== VIEW 3: SATISFACTION SURVEY FORM ==================== -->
+        <section id="viewSurvey" class="view-section hidden w-full max-w-3xl flex flex-col space-y-6 my-auto py-6">
+            <!-- Header Bar -->
+            <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 block">تم تسجيل زيارتكم بنجاح!</span>
+                    <span class="text-sm font-bold text-cyan-400" id="registeredSerialBadge">رقم التسجيل: STEM-1001</span>
+                </div>
+                <div class="text-xs font-bold text-purple-400 bg-purple-950/60 border border-purple-800/50 px-3 py-1 rounded-full">
+                    <span>الخطوة 2 من 2: استبيان الرضا</span>
+                </div>
+            </div>
+
+            <div class="text-center space-y-1">
+                <h3 class="text-2xl md:text-3xl font-bold text-white">قياس رضا الزائر</h3>
+                <p class="text-slate-400 text-xs md:text-sm">رأيكم يساهم بشكل مباشر في تطوير المعارض المبتكرة القادمة</p>
+            </div>
+
+            <form id="surveyForm" onsubmit="app.submitSurvey(event)" class="space-y-6">
+
+                <!-- Question 1: General Experience -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <label class="block text-sm md:text-base font-bold text-white">
+                        <span class="text-cyan-400 ml-1">1.</span> كيف تقيم تجربتك العامة في معرض STEM؟
+                    </label>
+                    <div class="grid grid-cols-5 gap-2" id="q1RatingContainer">
+                        <!-- Options generated dynamically or static below -->
+                    </div>
+                </div>
+
+                <!-- Question 2: Booths Variety -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <label class="block text-sm md:text-base font-bold text-white">
+                        <span class="text-cyan-400 ml-1">2.</span> كيف تقيم تنوع الأركان والأنشطة التعليمية؟
+                    </label>
+                    <div class="grid grid-cols-5 gap-2" id="q2RatingContainer"></div>
+                </div>
+
+                <!-- Question 3: Organization -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <label class="block text-sm md:text-base font-bold text-white">
+                        <span class="text-cyan-400 ml-1">3.</span> كيف تقيم التنظيم والاستقبال؟
+                    </label>
+                    <div class="grid grid-cols-5 gap-2" id="q3RatingContainer"></div>
+                </div>
+
+                <!-- Question 4: Expectation Met -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <label class="block text-sm md:text-base font-bold text-white">
+                        <span class="text-cyan-400 ml-1">4.</span> هل حقق المعرض توقعاتك؟
+                    </label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="cursor-pointer border border-slate-700/80 bg-slate-900/50 hover:border-emerald-500 rounded-xl p-3 text-center transition-all has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/40">
+                            <input type="radio" name="q4" value="نعم" required class="hidden">
+                            <i class="fa-solid fa-circle-check text-emerald-400 block text-lg mb-1"></i>
+                            <span class="text-xs md:text-sm font-bold text-white">نعم</span>
+                        </label>
+                        <label class="cursor-pointer border border-slate-700/80 bg-slate-900/50 hover:border-amber-500 rounded-xl p-3 text-center transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/40">
+                            <input type="radio" name="q4" value="إلى حد ما" class="hidden">
+                            <i class="fa-solid fa-circle-half-stroke text-amber-400 block text-lg mb-1"></i>
+                            <span class="text-xs md:text-sm font-bold text-white">إلى حد ما</span>
+                        </label>
+                        <label class="cursor-pointer border border-slate-700/80 bg-slate-900/50 hover:border-rose-500 rounded-xl p-3 text-center transition-all has-[:checked]:border-rose-500 has-[:checked]:bg-rose-950/40">
+                            <input type="radio" name="q4" value="لا" class="hidden">
+                            <i class="fa-solid fa-circle-xmark text-rose-400 block text-lg mb-1"></i>
+                            <span class="text-xs md:text-sm font-bold text-white">لا</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-2 flex items-center justify-between gap-4">
+                    <button type="button" onclick="app.skipSurvey()" class="text-slate-400 hover:text-slate-200 text-sm font-semibold px-4 py-3">
+                        تخطي الاستبيان
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-cyan-500/20 text-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>إرسال التقييم</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+
+        <!-- ==================== VIEW 4: THANK YOU SCREEN ==================== -->
+        <section id="viewThanks" class="view-section hidden w-full max-w-xl flex flex-col items-center text-center space-y-6 my-auto py-10">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center text-slate-950 text-5xl shadow-2xl shadow-cyan-500/40 animate-bounce">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-3xl md:text-4xl font-black text-white">تم تسجيل زيارتكم بنجاح!</h3>
+                <p class="text-slate-300 text-base md:text-lg leading-relaxed">
+                    شكراً لمشاركتكم، رأيكم يساهم في تطوير معارضنا القادمة وإثراء تجربة الزوار.
+                </p>
+            </div>
+
+            <!-- Confirmation Badge -->
+            <div class="glass-panel px-6 py-3 rounded-2xl border border-cyan-500/30">
+                <p class="text-xs text-slate-400">رقم السجل الخص بك:</p>
+                <p class="text-2xl font-mono font-bold text-cyan-400" id="thanksSerialBadge">STEM-1001</p>
+            </div>
+
+            <!-- Auto Redirect Progress & Timer -->
+            <div class="w-full glass-panel p-4 rounded-2xl space-y-3 border border-slate-800">
+                <p class="text-xs text-slate-400">سيتم العودة للشاشة الرئيسية تلقائياً خلال <span id="countdownText" class="text-cyan-400 font-bold text-sm">5</span> ثوانٍ...</p>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="countdownBar" class="bg-gradient-to-r from-cyan-400 to-purple-500 h-full w-full transition-all duration-1000 ease-linear"></div>
+                </div>
+            </div>
+
+            <div>
+                <button onclick="app.navToHome()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm px-8 py-3 rounded-xl border border-slate-700 transition-all">
+                    العودة للرئيسية الآن
+                </button>
+            </div>
+        </section>
+
+
+        <!-- ==================== VIEW 5: ADMIN LOGIN MODAL ==================== -->
+        <div id="adminLoginModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+            <div class="glass-panel max-w-md w-full p-6 md:p-8 rounded-3xl border border-slate-700 space-y-6 shadow-2xl relative">
+                <button onclick="app.closeAdminModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mx-auto text-2xl border border-cyan-500/20">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">دخول لوحة تحكم الإدارة</h3>
+                    <p class="text-xs text-slate-400">أدخل كلمة المرور الخاصة بمنظمي معرض STEM</p>
+                </div>
+
+                <form onsubmit="app.authenticateAdmin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-300 font-bold mb-2">كلمة المرور</label>
+                        <div class="relative">
+                            <input type="password" id="adminPasswordInput" placeholder="أدخل كلمة المرور..." required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-center font-mono text-lg tracking-widest focus:outline-none focus:border-cyan-400">
+                        </div>
+                        <p id="loginErrorMsg" class="text-xs text-rose-400 mt-2 hidden text-center"><i class="fa-solid fa-circle-exclamation"></i> كلمة المرور غير صحيحة (الافتراضية: 123456)</p>
+                    </div>
+
+                    <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-500/20">
+                        تسجيل الدخول
+                    </button>
+                </form>
+
+                <p class="text-[11px] text-center text-slate-500">كلمة المرور الافتراضية للتجربة: <code class="text-cyan-400 bg-slate-900 px-1.5 py-0.5 rounded">123456</code></p>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 6: ADMIN CONTROL DASHBOARD ==================== -->
+        <section id="viewAdminDashboard" class="view-section hidden w-full flex flex-col space-y-6 py-4">
+            
+            <!-- Admin Top Navigation Bar -->
+            <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 no-print">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <h3 class="text-lg font-bold text-white">لوحة تحكم المنظمين والإدارة</h3>
+                </div>
+
+                <!-- Admin Tab Navigation -->
+                <div class="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs md:text-sm font-semibold">
+                    <button onclick="app.switchAdminTab('overview')" id="tabBtnOverview" class="admin-tab-btn active px-4 py-2 rounded-lg text-white bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-all">
+                        <i class="fa-solid fa-chart-pie ml-1"></i> المؤشرات والتحليل
+                    </button>
+                    <button onclick="app.switchAdminTab('logs')" id="tabBtnLogs" class="admin-tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                        <i class="fa-solid fa-list-check ml-1"></i> سجل الزيارات
+                    </button>
+                    <button onclick="app.switchAdminTab('report')" id="tabBtnReport" class="admin-tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                        <i class="fa-solid fa-file-invoice ml-1"></i> التقارير والطباعة
+                    </button>
+                    <button onclick="app.switchAdminTab('settings')" id="tabBtnSettings" class="admin-tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                        <i class="fa-solid fa-sliders ml-1"></i> الإعدادات
+                    </button>
+                </div>
+
+                <!-- Admin Quick Actions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="app.exitAdmin()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700">
+                        <i class="fa-solid fa-door-open ml-1"></i> الخروج للكشك
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 1: OVERVIEW & ANALYTICS -->
+            <div id="adminTabOverview" class="admin-tab-content space-y-6">
+                
+                <!-- KPI Stat Cards Row -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Total Visitors -->
+                    <div class="glass-card p-5 rounded-2xl border-r-4 border-r-cyan-400">
+                        <div class="flex items-center justify-between text-slate-400 mb-2">
+                            <span class="text-xs font-bold">إجمالي الزوار</span>
+                            <i class="fa-solid fa-users text-cyan-400 text-lg"></i>
+                        </div>
+                        <span id="kpiTotalVisitors" class="text-3xl font-black text-white">0</span>
+                        <span class="text-[11px] text-slate-400 block mt-1">حساب الزيارات المسجلة</span>
+                    </div>
+
+                    <!-- Total Surveys -->
+                    <div class="glass-card p-5 rounded-2xl border-r-4 border-r-purple-400">
+                        <div class="flex items-center justify-between text-slate-400 mb-2">
+                            <span class="text-xs font-bold">عدد التقييمات</span>
+                            <i class="fa-solid fa-square-poll-vertical text-purple-400 text-lg"></i>
+                        </div>
+                        <span id="kpiTotalSurveys" class="text-3xl font-black text-white">0</span>
+                        <span id="kpiResponseRate" class="text-[11px] text-purple-300 block mt-1">استجابة 0%</span>
+                    </div>
+
+                    <!-- Average Rating -->
+                    <div class="glass-card p-5 rounded-2xl border-r-4 border-r-amber-400">
+                        <div class="flex items-center justify-between text-slate-400 mb-2">
+                            <span class="text-xs font-bold">متوسط التقييم العام</span>
+                            <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpiAvgRating" class="text-3xl font-black text-white">0.0</span>
+                            <span class="text-xs text-slate-400">من 5.0</span>
+                        </div>
+                        <div id="kpiStarsRow" class="text-amber-400 text-xs mt-1">★★★★★</div>
+                    </div>
+
+                    <!-- Satisfaction Rate -->
+                    <div class="glass-card p-5 rounded-2xl border-r-4 border-r-emerald-400">
+                        <div class="flex items-center justify-between text-slate-400 mb-2">
+                            <span class="text-xs font-bold">نسبة الرضا العامة</span>
+                            <i class="fa-solid fa-face-smile text-emerald-400 text-lg"></i>
+                        </div>
+                        <span id="kpiSatisfactionRate" class="text-3xl font-black text-emerald-400">0%</span>
+                        <span class="text-[11px] text-slate-400 block mt-1">تقييم ممتاز وجيد جداً</span>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1: Visitors Breakdown & Rating Score Distribution -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-cyan-400"></i>
+                            <span>توزيع الزوار حسب الفئة</span>
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="chartVisitorTypes"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-purple-400"></i>
+                            <span>توزيع تقييمات الرضا العامة</span>
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="chartRatings"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2: Hourly Visitor Flow & Question Rating Averages -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                            <span>توزيع أعداد الزوار حسب ساعات اليوم</span>
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="chartHourlyFlow"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-amber-400"></i>
+                            <span>متوسط الأداء لكل معيار في الاستبيان</span>
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="chartQuestionsBreakdown"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expectations Breakdown Card (Question 4 Analysis) -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <h4 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye text-cyan-400"></i>
+                        <span>مدى تحقيق المعرض لتوقعات الزوار (السؤال الرابع)</span>
+                    </h4>
+                    <div id="expectationsBreakdownContainer" class="pt-2">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ADMIN TAB 2: VISITOR LOGS TABLE -->
+            <div id="adminTabLogs" class="admin-tab-content hidden space-y-4">
+                <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+                    <!-- Search & Filters -->
+                    <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                        <div class="relative flex-1 min-w-[200px]">
+                            <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-500 text-sm"></i>
+                            <input type="text" id="logSearchInput" oninput="app.filterLogs()" placeholder="بحث برقم السجل أو الملاحظات..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pr-9 pl-4 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                        </div>
+
+                        <select id="logCategoryFilter" onchange="app.filterLogs()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                            <option value="ALL">جميع الفئات</option>
+                            <option value="طالب">طالب</option>
+                            <option value="معلم">معلم</option>
+                            <option value="ولي أمر">ولي أمر</option>
+                            <option value="مشرف تربوي">مشرف تربوي</option>
+                            <option value="مسؤول أو شخصية رسمية">مسؤول / شخصية رسمية</option>
+                            <option value="زائر آخر">زائر آخر</option>
+                        </select>
+                    </div>
+
+                    <!-- Export Excel CSV Button -->
+                    <button onclick="app.exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>تصدير إلى Excel (CSV)</span>
+                    </button>
+                </div>
+
+                <!-- Logs Table -->
+                <div class="glass-panel rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-900/90 text-slate-400 font-bold border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3.5">الرقم التسلسلي</th>
+                                    <th class="p-3.5">نوع الزائر</th>
+                                    <th class="p-3.5">التاريخ والوقت</th>
+                                    <th class="p-3.5">حالة الاستبيان</th>
+                                    <th class="p-3.5">التقييم العام</th>
+                                    <th class="p-3.5 text-center">التفاصيل / الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ADMIN TAB 3: PRINTABLE REPORT -->
+            <div id="adminTabReport" class="admin-tab-content hidden space-y-6">
+                <div class="glass-panel p-4 rounded-2xl flex items-center justify-between no-print">
+                    <div>
+                        <h4 class="text-base font-bold text-white">التقرير الشامل التراكمي لمعرض STEM</h4>
+                        <p class="text-xs text-slate-400">تقرير جاهز للطباعة والتصدير بصيغة PDF</p>
+                    </div>
+                    <button onclick="window.print()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>طباعة التقرير / تصدير PDF</span>
+                    </button>
+                </div>
+
+                <!-- Printable Paper Card Container -->
+                <div class="glass-panel p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-8 text-white">
+                    <!-- Report Header -->
+                    <div class="border-b border-slate-700 pb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-black text-cyan-400" id="reportHeaderTitle">تقرير إحصائيات معرض STEM</h2>
+                            <p class="text-xs text-slate-400 mt-1">تاريخ استخراج التقرير: <span id="reportGeneratedDate" class="font-mono text-white"></span></p>
+                        </div>
+                        <div class="text-left font-mono text-xs text-slate-400">
+                            <span class="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-cyan-400">نسخة رسمية</span>
+                        </div>
+                    </div>
+
+                    <!-- Executive Summary Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
+                            <span class="text-xs text-slate-400 block">إجمالي الزوار</span>
+                            <span id="repTotalVisitors" class="text-2xl font-bold text-cyan-400">0</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
+                            <span class="text-xs text-slate-400 block">عدد التقييمات</span>
+                            <span id="repTotalSurveys" class="text-2xl font-bold text-purple-400">0</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
+                            <span class="text-xs text-slate-400 block">متوسط التقييم</span>
+                            <span id="repAvgRating" class="text-2xl font-bold text-amber-400">0.0 / 5</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-800/80 border border-slate-700">
+                            <span class="text-xs text-slate-400 block">نسبة الرضا العامة</span>
+                            <span id="repSatisfaction" class="text-2xl font-bold text-emerald-400">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Category Detailed Table -->
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-bold text-cyan-400 border-r-2 border-cyan-400 pr-2">توزيع الزوار حسب الفئات</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-xs border border-slate-800">
+                                <thead class="bg-slate-800 text-slate-300">
+                                    <tr>
+                                        <th class="p-2.5 border border-slate-700">الفئة</th>
+                                        <th class="p-2.5 border border-slate-700">عدد الزوار</th>
+                                        <th class="p-2.5 border border-slate-700">النسبة المئوية</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportCategoryTable" class="divide-y divide-slate-800">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Survey Ratings Detailed Table -->
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-bold text-purple-400 border-r-2 border-purple-400 pr-2">ملخص مستويات رضا الزوار</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-xs border border-slate-800">
+                                <thead class="bg-slate-800 text-slate-300">
+                                    <tr>
+                                        <th class="p-2.5 border border-slate-700">التقييم</th>
+                                        <th class="p-2.5 border border-slate-700">العدد</th>
+                                        <th class="p-2.5 border border-slate-700">النسبة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportRatingsTable" class="divide-y divide-slate-800">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Signature Area for Print -->
+                    <div class="pt-8 grid grid-cols-2 text-center text-xs text-slate-400 border-t border-slate-800">
+                        <div>
+                            <p class="font-bold text-slate-300 mb-6">مسؤول لجنة الاستقبال والتسجيل</p>
+                            <p>التوقيع: ................................</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-300 mb-6">إدارة معرض STEM</p>
+                            <p>التوقيع والختم: ................................</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ADMIN TAB 4: SETTINGS & DATA MANAGEMENT -->
+            <div id="adminTabSettings" class="admin-tab-content hidden space-y-6">
+                <!-- General Settings -->
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <h4 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-gear text-cyan-400"></i>
+                        <span>إعدادات المعرض والكشك</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-300 font-bold mb-2">اسم المعرض الرسمي</label>
+                            <input type="text" id="settingExhibitionName" value="معرض STEM" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-slate-300 font-bold mb-2">كلمة مرور الإدارة الجديدة</label>
+                            <input type="password" id="settingAdminPassword" placeholder="تغيير كلمة المرور..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button onclick="app.saveSettings()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-6 py-2.5 rounded-xl transition-all">
+                            حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Backup & Restore -->
+                <div class="glass-panel p-6 rounded-2xl space-y-4">
+                    <h4 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-database text-purple-400"></i>
+                        <span>النسخ الاحتياطي وإدارة البيانات</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Export JSON Backup -->
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <h5 class="text-xs font-bold text-white">تصدير نسخة احتياطية (JSON)</h5>
+                            <p class="text-[11px] text-slate-400">تنزيل جميع البيانات والإحصائيات في ملف أمان محلي.</p>
+                            <button onclick="app.exportBackupJSON()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all w-full mt-2">
+                                <i class="fa-solid fa-download ml-1"></i> تحميل النسخة الاحتياطية
+                            </button>
+                        </div>
+
+                        <!-- Import JSON Backup -->
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <h5 class="text-xs font-bold text-white">استعادة نسخة احتياطية</h5>
+                            <p class="text-[11px] text-slate-400">رفع ملف JSON سابق لاسترجاع البيانات المسجلة.</p>
+                            <input type="file" id="importBackupFile" accept=".json" class="hidden" onchange="app.importBackupJSON(event)">
+                            <button onclick="document.getElementById('importBackupFile').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-lg transition-all border border-slate-700 w-full mt-2">
+                                <i class="fa-solid fa-upload ml-1"></i> اختيار ملف واستعادة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Factory Reset & Demo Data -->
+                <div class="glass-panel p-6 rounded-2xl space-y-4 border border-rose-900/30">
+                    <h4 class="text-base font-bold text-rose-400 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>منطقة الأمان وتصفير البيانات</span>
+                    </h4>
+
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <h5 class="text-xs font-bold text-white">تعبئة بيانات تجريبية (Demo Data)</h5>
+                            <p class="text-[11px] text-slate-400">إضافة 35 سجل محاكاة لاختبار الرسوم البيانية والتقارير فورياً.</p>
+                        </div>
+                        <button onclick="app.loadDemoData()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                            توليد بيانات تجريبية
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-rose-950/20 p-4 rounded-xl border border-rose-900/50">
+                        <div>
+                            <h5 class="text-xs font-bold text-rose-300">تصفير كافة الإحصائيات والسجلات</h5>
+                            <p class="text-[11px] text-slate-400">حذف جميع الزيارات والتقييمات المخزنة والبدء من جديد.</p>
+                        </div>
+                        <button onclick="app.confirmResetData()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                            تصفير البيانات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ==================== LOG DETAIL MODAL ==================== -->
+        <div id="logDetailModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+            <div class="glass-panel max-w-lg w-full p-6 rounded-3xl border border-slate-700 space-y-5 relative">
+                <button onclick="app.closeLogDetailModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <div class="border-b border-slate-800 pb-3">
+                    <h4 class="text-lg font-bold text-white" id="modalSerialTitle">STEM-1001</h4>
+                    <p class="text-xs text-slate-400" id="modalVisitorMeta">طالب • 2026-11-01 • 10:30 AM</p>
+                </div>
+
+                <div id="modalSurveyContent" class="space-y-3 text-xs">
+                    <!-- Dynamic details -->
+                </div>
+
+                <div class="pt-2 text-left">
+                    <button onclick="app.closeLogDetailModal()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-5 py-2 rounded-xl">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="no-print border-t border-slate-900 bg-slate-950/80 text-center py-4 text-xs text-slate-500">
+        <p>جميع الحقوق محفوظة © معرض STEM – نظام تسجيل الزوار وقياس الرضا الذكي</p>
+    </footer>
+
+    <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+    <script>
+        /**
+         * STEM Exhibition Visitor & Satisfaction System
+         * Single-file complete JavaScript controller
+         */
+        class STEMApp {
+            constructor() {
+                this.STORAGE_KEY = 'STEM_EXHIBITION_DATA_V1';
+                this.ratingOptions = ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'];
+                
+                // Active session temporary state
+                this.currentVisit = null;
+                this.countdownInterval = null;
+                this.charts = {};
+
+                // Load initial persistent database state
+                this.db = this.loadDatabase();
+
+                // Initialize UI bindings & components on boot
+                window.addEventListener('DOMContentLoaded', () => {
+                    this.initClock();
+                    this.renderRatingOptionTiles();
+                    this.updateLandingStats();
+                    this.applyExhibitionTitle();
+                    
+                    // Default view on load is Kiosk Landing Screen
+                    this.showView('viewLanding');
+                });
+            }
+
+            // Load stored database or fallback to initial defaults
+            loadDatabase() {
+                const stored = localStorage.getItem(this.STORAGE_KEY);
+                if (stored) {
+                    try {
+                        return JSON.parse(stored);
+                    } catch (e) {
+                        console.error('Database parse error:', e);
+                    }
+                }
+                
+                // Initial Default Storage Structure
+                const defaultDb = {
+                    settings: {
+                        exhibitionName: "معرض STEM",
+                        adminPassword: "123456",
+                        isKioskOpen: true,
+                        serialCounter: 1001
+                    },
+                    visits: []
+                };
+
+                // Pre-seed demo data automatically if DB is completely fresh for instant visualization
+                return this.generateInitialDemoData(defaultDb);
+            }
+
+            // Save database changes to localStorage
+            saveDatabase() {
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.db));
+                this.updateLandingStats();
+            }
+
+            // Generate realistic sample records for demonstration
+            generateInitialDemoData(baseDb) {
+                const categories = ['طالب', 'معلم', 'ولي أمر', 'مشرف تربوي', 'مسؤول أو شخصية رسمية', 'زائر آخر'];
+                const ratingValues = ['ممتاز', 'ممتاز', 'ممتاز', 'جيد جداً', 'جيد جداً', 'جيد'];
+                const q4Options = ['نعم', 'نعم', 'نعم', 'إلى حد ما', 'لا'];
+                const now = new Date();
+
+                for (let i = 1; i <= 32; i++) {
+                    const cat = categories[Math.floor(Math.random() * categories.length)];
+                    const hour = 8 + Math.floor(Math.random() * 8); // 8 AM to 4 PM
+                    const min = Math.floor(Math.random() * 60);
+                    
+                    const timestamp = new Date(now);
+                    timestamp.setHours(hour, min, 0);
+
+                    const q1 = ratingValues[Math.floor(Math.random() * ratingValues.length)];
+                    const q2 = ratingValues[Math.floor(Math.random() * ratingValues.length)];
+                    const q3 = ratingValues[Math.floor(Math.random() * ratingValues.length)];
+                    const q4 = q4Options[Math.floor(Math.random() * q4Options.length)];
+
+                    baseDb.visits.push({
+                        id: 'vis_' + (1000 + i),
+                        serial: `STEM-${1000 + i}`,
+                        category: cat,
+                        date: timestamp.toISOString().split('T')[0],
+                        time: timestamp.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+                        timestamp: timestamp.getTime(),
+                        survey: {
+                            q1: q1,
+                            q2: q2,
+                            q3: q3,
+                            q4: q4
+                        }
+                    });
+                }
+
+                baseDb.settings.serialCounter = 1033;
+                return baseDb;
+            }
+
+            // Real-time Clock Initialization
+            initClock() {
+                const timeSpan = document.getElementById('clockTime');
+                const update = () => {
+                    const now = new Date();
+                    timeSpan.textContent = now.toLocaleTimeString('ar-SA');
+                };
+                update();
+                setInterval(update, 1000);
+            }
+
+            // Render 5-scale rating tiles for Questions 1, 2, and 3
+            renderRatingOptionTiles() {
+                const ratingConfigs = [
+                    { label: 'ممتاز', emoji: '😍', color: 'emerald', val: 'ممتاز' },
+                    { label: 'جيد جداً', emoji: '😄', color: 'cyan', val: 'جيد جداً' },
+                    { label: 'جيد', emoji: '🙂', color: 'blue', val: 'جيد' },
+                    { label: 'مقبول', emoji: '😐', color: 'amber', val: 'مقبول' },
+                    { label: 'ضعيف', emoji: '😞', color: 'rose', val: 'ضعيف' }
+                ];
+
+                ['q1', 'q2', 'q3'].forEach(qId => {
+                    const container = document.getElementById(`${qId}RatingContainer`);
+                    if (!container) return;
+
+                    container.innerHTML = ratingConfigs.map((item, idx) => `
+                        <label class="cursor-pointer border border-slate-700/80 bg-slate-900/50 hover:border-cyan-400 rounded-xl p-2.5 md:p-3 text-center transition-all has-[:checked]:border-cyan-400 has-[:checked]:bg-cyan-950/40 group">
+                            <input type="radio" name="${qId}" value="${item.val}" ${idx === 0 ? 'required' : ''} class="hidden">
+                            <span class="text-xl md:text-2xl block mb-1 group-hover:scale-125 transition-transform">${item.emoji}</span>
+                            <span class="text-[10px] md:text-xs font-bold text-slate-300 group-hover:text-cyan-300">${item.label}</span>
+                        </label>
+                    `).join('');
+                });
+            }
+
+            // View Navigator
+            showView(viewId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                const targetView = document.getElementById(viewId);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // Apply Exhibition Title everywhere
+            applyExhibitionTitle() {
+                const name = this.db.settings.exhibitionName || "معرض STEM";
+                document.getElementById('headerExhibitionTitle').textContent = name;
+                document.getElementById('heroTitle').innerHTML = `أهلاً وسهلاً بكم في <br><span class="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">${name}</span>`;
+                document.getElementById('reportHeaderTitle').textContent = `تقرير إحصائيات ${name}`;
+            }
+
+            // Update Landing Screen Live Counter
+            updateLandingStats() {
+                const total = this.db.visits.length;
+                document.getElementById('landingVisitorCount').textContent = total;
+
+                // Calculate satisfaction rate
+                let satisfiedCount = 0;
+                let surveyTotal = 0;
+
+                this.db.visits.forEach(v => {
+                    if (v.survey) {
+                        surveyTotal++;
+                        if (v.survey.q1 === 'ممتاز' || v.survey.q1 === 'جيد جداً') {
+                            satisfiedCount++;
+                        }
+                    }
+                });
+
+                const rate = surveyTotal > 0 ? Math.round((satisfiedCount / surveyTotal) * 100) : 100;
+                document.getElementById('landingSatisfactionRate').textContent = `${rate}%`;
+            }
+
+            // ==================== KIOSK VISITOR FLOW ====================
+
+            // Step 1: Start Registration from Landing Screen
+            startRegistration() {
+                const nextSerial = `STEM-${this.db.settings.serialCounter}`;
+                document.getElementById('nextSerialPreview').textContent = `رقم الزيارة القادم: ${nextSerial}`;
+                this.showView('viewRegister');
+            }
+
+            // Step 2: Select Visitor Category (Single Tap Action)
+            selectVisitorType(type) {
+                const now = new Date();
+                const serial = `STEM-${this.db.settings.serialCounter}`;
+                
+                // Increment serial counter
+                this.db.settings.serialCounter++;
+
+                // Create visit record
+                this.currentVisit = {
+                    id: 'vis_' + Date.now(),
+                    serial: serial,
+                    category: type,
+                    date: now.toISOString().split('T')[0],
+                    time: now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: now.getTime(),
+                    survey: null
+                };
+
+                // Push visit record immediately
+                this.db.visits.push(this.currentVisit);
+                this.saveDatabase();
+
+                // Update next survey step badges
+                document.getElementById('registeredSerialBadge').textContent = `رقم التسجيل: ${serial}`;
+                document.getElementById('thanksSerialBadge').textContent = serial;
+
+                // Reset survey form inputs
+                document.getElementById('surveyForm').reset();
+
+                // Transition immediately to Satisfaction Survey
+                this.showView('viewSurvey');
+            }
+
+            // Helper: Fill quick corner tag
+            fillQuickCorner(name) {
+                document.getElementById('q5_input').value = name;
+            }
+
+            // Step 3: Submit Satisfaction Survey
+            submitSurvey(event) {
+                event.preventDefault();
+                if (!this.currentVisit) return;
+
+                const formData = new FormData(event.target);
+                const surveyData = {
+                    q1: formData.get('q1'),
+                    q2: formData.get('q2'),
+                    q3: formData.get('q3'),
+                    q4: formData.get('q4')
+                };
+
+                // Attach survey to current visit in database
+                const foundIndex = this.db.visits.findIndex(v => v.id === this.currentVisit.id);
+                if (foundIndex !== -1) {
+                    this.db.visits[foundIndex].survey = surveyData;
+                    this.saveDatabase();
+                }
+
+                // Trigger confetti visual celebration
+                try {
+                    confetti({
+                        particleCount: 80,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                } catch (e) {}
+
+                // Transition to Thank You Screen
+                this.startThanksCountdown();
+            }
+
+            // Skip Survey Action
+            skipSurvey() {
+                this.startThanksCountdown();
+            }
+
+            // Step 4: Thank You Screen & Auto Countdown Reset
+            startThanksCountdown() {
+                this.showView('viewThanks');
+
+                let secondsLeft = 5;
+                const countdownText = document.getElementById('countdownText');
+                const countdownBar = document.getElementById('countdownBar');
+
+                countdownText.textContent = secondsLeft;
+                countdownBar.style.width = '100%';
+
+                if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+                this.countdownInterval = setInterval(() => {
+                    secondsLeft--;
+                    countdownText.textContent = secondsLeft;
+                    countdownBar.style.width = `${(secondsLeft / 5) * 100}%`;
+
+                    if (secondsLeft <= 0) {
+                        clearInterval(this.countdownInterval);
+                        this.navToHome();
+                    }
+                }, 1000);
+            }
+
+            // Navigate back to Kiosk Home & Clear session
+            navToHome() {
+                if (this.countdownInterval) clearInterval(this.countdownInterval);
+                this.currentVisit = null;
+                this.updateLandingStats();
+                this.showView('viewLanding');
+            }
+
+
+            // ==================== ADMIN CONTROL PANEL ====================
+
+            toggleAdminAccess() {
+                document.getElementById('adminLoginModal').classList.remove('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('loginErrorMsg').classList.add('hidden');
+                document.getElementById('adminPasswordInput').focus();
+            }
+
+            closeAdminModal() {
+                document.getElementById('adminLoginModal').classList.add('hidden');
+            }
+
+            authenticateAdmin(event) {
+                event.preventDefault();
+                const pwd = document.getElementById('adminPasswordInput').value;
+                const correctPwd = this.db.settings.adminPassword || '123456';
+
+                if (pwd === correctPwd) {
+                    this.closeAdminModal();
+                    this.openAdminDashboard();
+                } else {
+                    document.getElementById('loginErrorMsg').classList.remove('hidden');
+                }
+            }
+
+            openAdminDashboard() {
+                this.showView('viewAdminDashboard');
+                this.switchAdminTab('overview');
+            }
+
+            exitAdmin() {
+                this.navToHome();
+            }
+
+            switchAdminTab(tabName) {
+                // Update Admin Sub-Nav Buttons
+                document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                    btn.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+                    btn.classList.add('text-slate-400');
+                });
+
+                const activeBtnMap = {
+                    'overview': 'tabBtnOverview',
+                    'logs': 'tabBtnLogs',
+                    'report': 'tabBtnReport',
+                    'settings': 'tabBtnSettings'
+                };
+
+                const activeBtn = document.getElementById(activeBtnMap[tabName]);
+                if (activeBtn) {
+                    activeBtn.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+                    activeBtn.classList.remove('text-slate-400');
+                }
+
+                // Show Content Tab
+                document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
+                
+                if (tabName === 'overview') {
+                    document.getElementById('adminTabOverview').classList.remove('hidden');
+                    this.renderOverviewAnalytics();
+                } else if (tabName === 'logs') {
+                    document.getElementById('adminTabLogs').classList.remove('hidden');
+                    this.renderLogsTable();
+                } else if (tabName === 'report') {
+                    document.getElementById('adminTabReport').classList.remove('hidden');
+                    this.renderPrintableReport();
+                } else if (tabName === 'settings') {
+                    document.getElementById('adminTabSettings').classList.remove('hidden');
+                    document.getElementById('settingExhibitionName').value = this.db.settings.exhibitionName;
+                }
+            }
+
+            // Compute KPI Metrics and Render Analytics Charts
+            renderOverviewAnalytics() {
+                const visits = this.db.visits;
+                const totalVisitors = visits.length;
+                const surveys = visits.filter(v => v.survey !== null);
+                const totalSurveys = surveys.length;
+
+                // KPI Calculations
+                const responseRate = totalVisitors > 0 ? Math.round((totalSurveys / totalVisitors) * 100) : 0;
+                
+                const scoreMap = { 'ممتاز': 5, 'جيد جداً': 4, 'جيد': 3, 'مقبول': 2, 'ضعيف': 1 };
+                let totalScoreSum = 0;
+                let satisfiedSurveys = 0;
+
+                surveys.forEach(v => {
+                    const score = scoreMap[v.survey.q1] || 0;
+                    totalScoreSum += score;
+                    if (v.survey.q1 === 'ممتاز' || v.survey.q1 === 'جيد جداً') {
+                        satisfiedSurveys++;
+                    }
+                });
+
+                const avgRating = totalSurveys > 0 ? (totalScoreSum / totalSurveys).toFixed(1) : '0.0';
+                const satisfactionRate = totalSurveys > 0 ? Math.round((satisfiedSurveys / totalSurveys) * 100) : 0;
+
+                // Update KPI Cards UI
+                document.getElementById('kpiTotalVisitors').textContent = totalVisitors;
+                document.getElementById('kpiTotalSurveys').textContent = totalSurveys;
+                document.getElementById('kpiResponseRate').textContent = `نسبة استجابة ${responseRate}%`;
+                document.getElementById('kpiAvgRating').textContent = avgRating;
+                document.getElementById('kpiSatisfactionRate').textContent = `${satisfactionRate}%`;
+
+                // Render Charts with Chart.js
+                this.renderVisitorTypesChart(visits);
+                this.renderRatingsChart(surveys);
+                this.renderHourlyFlowChart(visits);
+                this.renderQuestionsBreakdownChart(surveys);
+                this.renderExpectationsBreakdown(surveys);
+            }
+
+            // Chart 1: Visitor Category Doughnut
+            renderVisitorTypesChart(visits) {
+                const counts = { 'طالب': 0, 'معلم': 0, 'ولي أمر': 0, 'مشرف تربوي': 0, 'مسؤول أو شخصية رسمية': 0, 'زائر آخر': 0 };
+                visits.forEach(v => { if (counts[v.category] !== undefined) counts[v.category]++; });
+
+                const ctx = document.getElementById('chartVisitorTypes').getContext('2d');
+                if (this.charts.visitorTypes) this.charts.visitorTypes.destroy();
+
+                this.charts.visitorTypes = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(counts),
+                        datasets: [{
+                            data: Object.values(counts),
+                            backgroundColor: ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#3b82f6'],
+                            borderWidth: 2,
+                            borderColor: '#1e293b'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Cairo' } } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Satisfaction Bar Chart
+            renderRatingsChart(surveys) {
+                const counts = { 'ممتاز': 0, 'جيد جداً': 0, 'جيد': 0, 'مقبول': 0, 'ضعيف': 0 };
+                surveys.forEach(v => { if (counts[v.survey.q1]) counts[v.survey.q1]++; });
+
+                const ctx = document.getElementById('chartRatings').getContext('2d');
+                if (this.charts.ratings) this.charts.ratings.destroy();
+
+                this.charts.ratings = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(counts),
+                        datasets: [{
+                            label: 'عدد التقييمات',
+                            data: Object.values(counts),
+                            backgroundColor: ['#10b981', '#06b6d4', '#3b82f6', '#f59e0b', '#f43f5e'],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#cbd5e1', font: { family: 'Cairo' } } },
+                            y: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 3: Hourly Visitor Timeline
+            renderHourlyFlowChart(visits) {
+                const hours = ['8 ص', '9 ص', '10 ص', '11 ص', '12 م', '1 م', '2 م', '3 م', '4 م', '5 م'];
+                const counts = new Array(hours.length).fill(0);
+
+                visits.forEach(v => {
+                    const dt = new Date(v.timestamp);
+                    const h = dt.getHours();
+                    const idx = h - 8;
+                    if (idx >= 0 && idx < hours.length) {
+                        counts[idx]++;
+                    }
+                });
+
+                const ctx = document.getElementById('chartHourlyFlow').getContext('2d');
+                if (this.charts.hourlyFlow) this.charts.hourlyFlow.destroy();
+
+                this.charts.hourlyFlow = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: hours,
+                        datasets: [{
+                            label: 'الزيارات',
+                            data: counts,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#cbd5e1', font: { family: 'Cairo' } } },
+                            y: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 4: Criteria Averages
+            renderQuestionsBreakdownChart(surveys) {
+                const scoreMap = { 'ممتاز': 5, 'جيد جداً': 4, 'جيد': 3, 'مقبول': 2, 'ضعيف': 1 };
+                let q1Sum = 0, q2Sum = 0, q3Sum = 0;
+
+                surveys.forEach(v => {
+                    q1Sum += scoreMap[v.survey.q1] || 0;
+                    q2Sum += scoreMap[v.survey.q2] || 0;
+                    q3Sum += scoreMap[v.survey.q3] || 0;
+                });
+
+                const count = surveys.length || 1;
+                const averages = [
+                    (q1Sum / count).toFixed(1),
+                    (q2Sum / count).toFixed(1),
+                    (q3Sum / count).toFixed(1)
+                ];
+
+                const ctx = document.getElementById('chartQuestionsBreakdown').getContext('2d');
+                if (this.charts.questions) this.charts.questions.destroy();
+
+                this.charts.questions = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['التجربة العامة', 'تنوع الأركان', 'التنظيم والاستقبال'],
+                        datasets: [{
+                            label: 'متوسط التقييم من 5',
+                            data: averages,
+                            backgroundColor: ['#06b6d4', '#8b5cf6', '#f59e0b'],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#cbd5e1', font: { family: 'Cairo' } } },
+                            y: { max: 5, min: 0, ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            }
+
+            // Render Question 4 Expectations Breakdown
+            renderExpectationsBreakdown(surveys) {
+                const counts = { 'نعم': 0, 'إلى حد ما': 0, 'لا': 0 };
+                surveys.forEach(v => {
+                    if (v.survey && v.survey.q4 && counts[v.survey.q4] !== undefined) {
+                        counts[v.survey.q4]++;
+                    }
+                });
+
+                const container = document.getElementById('expectationsBreakdownContainer');
+                if (!container) return;
+                const total = surveys.length || 1;
+                
+                container.innerHTML = `
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-800/40 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">نعم (حقق التوقعات)</span>
+                            <span class="text-2xl font-bold text-emerald-400">${counts['نعم']}</span>
+                            <span class="text-xs text-slate-500 block mt-1">${Math.round((counts['نعم'] / total) * 100)}%</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-amber-800/40 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">إلى حد ما</span>
+                            <span class="text-2xl font-bold text-amber-400">${counts['إلى حد ما']}</span>
+                            <span class="text-xs text-slate-500 block mt-1">${Math.round((counts['إلى حد ما'] / total) * 100)}%</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-rose-800/40 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">لا</span>
+                            <span class="text-2xl font-bold text-rose-400">${counts['لا']}</span>
+                            <span class="text-xs text-slate-500 block mt-1">${Math.round((counts['لا'] / total) * 100)}%</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render Logs Table with Filter/Search
+            renderLogsTable() {
+                this.filterLogs();
+            }
+
+            filterLogs() {
+                const search = document.getElementById('logSearchInput').value.toLowerCase();
+                const catFilter = document.getElementById('logCategoryFilter').value;
+
+                const filtered = this.db.visits.filter(v => {
+                    const matchSearch = v.serial.toLowerCase().includes(search);
+                    const matchCat = (catFilter === 'ALL') || (v.category === catFilter);
+                    return matchSearch && matchCat;
+                });
+
+                const tbody = document.getElementById('logsTableBody');
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">لا توجد سجلات تطابق البحث</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = filtered.slice().reverse().map(v => `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="p-3.5 font-mono font-bold text-cyan-400">${v.serial}</td>
+                        <td class="p-3.5">${v.category}</td>
+                        <td class="p-3.5 text-slate-400">${v.date} <span class="text-[10px] text-slate-500">${v.time}</span></td>
+                        <td class="p-3.5">
+                            ${v.survey ? 
+                                `<span class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full text-[10px] font-bold">مكتمل</span>` : 
+                                `<span class="bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full text-[10px]">مكتفي بالتسجيل</span>`}
+                        </td>
+                        <td class="p-3.5 font-bold">
+                            ${v.survey ? `<span class="text-amber-400">${v.survey.q1}</span>` : '-'}
+                        </td>
+                        <td class="p-3.5 text-center space-x-2 space-x-reverse">
+                            <button onclick="app.viewLogDetail('${v.id}')" class="text-cyan-400 hover:text-cyan-300 p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="app.deleteLog('${v.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // View Record Details Modal
+            viewLogDetail(id) {
+                const visit = this.db.visits.find(v => v.id === id);
+                if (!visit) return;
+
+                document.getElementById('modalSerialTitle').textContent = visit.serial;
+                document.getElementById('modalVisitorMeta').textContent = `${visit.category} • ${visit.date} • ${visit.time}`;
+
+                const content = document.getElementById('modalSurveyContent');
+                if (!visit.survey) {
+                    content.innerHTML = `<p class="text-slate-400 py-4 text-center">قام الزائر بتسجيل الحضور ولم يكمل استبيان الرضا.</p>`;
+                } else {
+                    content.innerHTML = `
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span class="text-slate-400 block">1. التجربة العامة:</span>
+                            <span class="text-white font-bold text-sm">${visit.survey.q1}</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span class="text-slate-400 block">2. تنوع الأركان والأنشطة:</span>
+                            <span class="text-white font-bold text-sm">${visit.survey.q2}</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span class="text-slate-400 block">3. التنظيم والاستقبال:</span>
+                            <span class="text-white font-bold text-sm">${visit.survey.q3}</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span class="text-slate-400 block">4. تحقيق التوقعات:</span>
+                            <span class="text-white font-bold text-sm">${visit.survey.q4}</span>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('logDetailModal').classList.remove('hidden');
+            }
+
+            closeLogDetailModal() {
+                document.getElementById('logDetailModal').classList.add('hidden');
+            }
+
+            // Delete single record
+            deleteLog(id) {
+                if (confirm('هل أنت تأكد من حذف هذا السجل نهائياً؟')) {
+                    this.db.visits = this.db.visits.filter(v => v.id !== id);
+                    this.saveDatabase();
+                    this.renderLogsTable();
+                }
+            }
+
+            // Export Data to CSV (Excel Compatible UTF-8)
+            exportToCSV() {
+                if (this.db.visits.length === 0) {
+                    alert('لا توجد بيانات للتصدير!');
+                    return;
+                }
+
+                let csvContent = "\uFEFF"; // UTF-8 BOM for Arabic Excel
+                csvContent += "الرقم التسلسلي,نوع الزائر,التاريخ,الوقت,التقييم العام,تنوع الأركان,التنظيم,تحقيق التوقعات\n";
+
+                this.db.visits.forEach(v => {
+                    const s = v.survey || {};
+                    const row = [
+                        v.serial,
+                        v.category,
+                        v.date,
+                        v.time,
+                        s.q1 || '',
+                        s.q2 || '',
+                        s.q3 || '',
+                        s.q4 || ''
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `STEM_Exhibition_Visits_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+            }
+
+            // Render Printable Report Data Tables
+            renderPrintableReport() {
+                document.getElementById('reportGeneratedDate').textContent = new Date().toLocaleString('ar-SA');
+                
+                const visits = this.db.visits;
+                const totalVisitors = visits.length;
+                const surveys = visits.filter(v => v.survey !== null);
+                const totalSurveys = surveys.length;
+
+                // Executive Summary Numbers
+                document.getElementById('repTotalVisitors').textContent = totalVisitors;
+                document.getElementById('repTotalSurveys').textContent = totalSurveys;
+
+                const scoreMap = { 'ممتاز': 5, 'جيد جداً': 4, 'جيد': 3, 'مقبول': 2, 'ضعيف': 1 };
+                let scoreSum = 0, satisfied = 0;
+
+                surveys.forEach(v => {
+                    scoreSum += scoreMap[v.survey.q1] || 0;
+                    if (v.survey.q1 === 'ممتاز' || v.survey.q1 === 'جيد جداً') satisfied++;
+                });
+
+                document.getElementById('repAvgRating').textContent = totalSurveys > 0 ? `${(scoreSum / totalSurveys).toFixed(1)} / 5` : '0.0 / 5';
+                document.getElementById('repSatisfaction').textContent = totalSurveys > 0 ? `${Math.round((satisfied / totalSurveys) * 100)}%` : '0%';
+
+                // Category Summary Table
+                const catCounts = {};
+                visits.forEach(v => { catCounts[v.category] = (catCounts[v.category] || 0) + 1; });
+
+                const catTable = document.getElementById('reportCategoryTable');
+                catTable.innerHTML = Object.entries(catCounts).map(([cat, count]) => {
+                    const pct = totalVisitors > 0 ? Math.round((count / totalVisitors) * 100) : 0;
+                    return `
+                        <tr>
+                            <td class="p-2 border border-slate-800 font-bold">${cat}</td>
+                            <td class="p-2 border border-slate-800">${count}</td>
+                            <td class="p-2 border border-slate-800 text-cyan-400 font-bold">${pct}%</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Satisfaction Ratings Table
+                const ratCounts = { 'ممتاز': 0, 'جيد جداً': 0, 'جيد': 0, 'مقبول': 0, 'ضعيف': 0 };
+                surveys.forEach(v => { if (ratCounts[v.survey.q1] !== undefined) ratCounts[v.survey.q1]++; });
+
+                const ratTable = document.getElementById('reportRatingsTable');
+                ratTable.innerHTML = Object.entries(ratCounts).map(([rat, count]) => {
+                    const pct = totalSurveys > 0 ? Math.round((count / totalSurveys) * 100) : 0;
+                    return `
+                        <tr>
+                            <td class="p-2 border border-slate-800 font-bold">${rat}</td>
+                            <td class="p-2 border border-slate-800">${count}</td>
+                            <td class="p-2 border border-slate-800 text-purple-400 font-bold">${pct}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Save Settings
+            saveSettings() {
+                const newTitle = document.getElementById('settingExhibitionName').value.trim();
+                const newPwd = document.getElementById('settingAdminPassword').value.trim();
+
+                if (newTitle) this.db.settings.exhibitionName = newTitle;
+                if (newPwd) this.db.settings.adminPassword = newPwd;
+
+                this.saveDatabase();
+                this.applyExhibitionTitle();
+                alert('تم حفظ الإعدادات بنجاح!');
+            }
+
+            // Export Database Backup as JSON
+            exportBackupJSON() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.db, null, 2));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute("href", dataStr);
+                dlAnchor.setAttribute("download", `STEM_Exhibition_Backup_${new Date().toISOString().split('T')[0]}.json`);
+                dlAnchor.click();
+            }
+
+            // Import Database JSON
+            importBackupJSON(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (parsed.visits && parsed.settings) {
+                            this.db = parsed;
+                            this.saveDatabase();
+                            this.applyExhibitionTitle();
+                            alert('تمت استعادة البيانات بنجاح!');
+                            this.switchAdminTab('overview');
+                        } else {
+                            alert('ملف البيانات غير صالح!');
+                        }
+                    } catch (err) {
+                        alert('حدث خطأ أثناء قراءة الملف!');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // Load Demo Data
+            loadDemoData() {
+                if (confirm('سيتم إضافة بيانات تجريبية محاكاة للاختبار. هل تريد المتابعة؟')) {
+                    this.db = this.generateInitialDemoData(this.db);
+                    this.saveDatabase();
+                    this.switchAdminTab('overview');
+                }
+            }
+
+            // Factory Reset
+            confirmResetData() {
+                if (confirm('تنبيه هام: هل أنت تأكد من تصفير كافة سجلات الزوار والإحصائيات نهائياً؟')) {
+                    this.db.visits = [];
+                    this.db.settings.serialCounter = 1001;
+                    this.saveDatabase();
+                    alert('تم تصفير كافة البيانات بنجاح.');
+                    this.switchAdminTab('overview');
+                }
+            }
+        }
+
+        // Global Singleton App Instance attached explicitly to window object
+        window.app = new STEMApp();
+    </script>
+</body>
+</html>
